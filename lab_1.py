@@ -1,37 +1,38 @@
 import math
-
 NULL_STR = '00000000000000000000000000000000'
 ONE_STR = '00000000000000000000000000000001'
 FIRST_MANT_INDEX = 9
 ALL_BITES = 32
 DEFAULT_EXP = 127
 MANTISSA_BITES = 23
+FIRST_INDEX = 0
+LAST_INDEX = 31
 
-def sum(x1_arr, x2_arr, sign) -> str:
-    result = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    result[0] = sign
-    for n in range(31, 0, -1):
-        temp_i = int(x1_arr[n]) + int(x2_arr[n]) + int(result[n])
-        if temp_i == 0 or temp_i == 1:
-            result[n] = str(temp_i)
+
+def sum(x1, x2, sign) -> str:
+    sum = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    sum[FIRST_INDEX] = sign
+    for index in range(LAST_INDEX, FIRST_INDEX, -1):
+        preliminary_result = int(x1[index]) + int(x2[index]) + int(sum[index])
+        if preliminary_result == 0 or preliminary_result == 1:
+            sum[index] = str(preliminary_result)
         else:
-            result[n] = '0' if temp_i == 2 else '1'
-            if n != 1: result[n-1] += 1
+            sum[index] = '0' if preliminary_result == 2 else '1'
+            if index != FIRST_INDEX + 1: sum[index - 1] += 1
             else: return 'Переполнение'
-    return ''.join(result)
+    return ''.join(sum)
 
-def sum_for_same_sign(x1_list, x2_list) -> str:
-    sign = x1_list[0]
-    if sign == '0': return sum(x1_list, x2_list, sign)
-    else: return sum(convert_return(''.join(x1_list)), convert_return(''.join(x2_list)), '1')
+def sum_for_same_sign(x1, x2) -> str:
+    sign = x1[FIRST_INDEX]
+    if sign == '0': return sum(x1, x2, sign)
+    else: return sum(convert_return(x1), convert_return(x2), '1')
 
-def compare_moduls(x1_list, x2_list, are_same, from_ind, to_ind) -> str:
-    start_index_x1 = find_start_index(x1_list,'0', from_ind, to_ind)
-    if are_same == True: 
-        start_index_x2 = find_start_index(x2_list,'0', from_ind, to_ind)
+def compare_moduls(x1, x2, are_same, from_ind, to_ind) -> str:
+    start_index_x1 = find_start_index(x1,'0', from_ind, to_ind)
+    if are_same: 
+        start_index_x2 = find_start_index(x2,'0', from_ind, to_ind)
     else: 
-        start_index_x2 = find_start_index(x2_list,'1', from_ind, to_ind)
-    
+        start_index_x2 = find_start_index(x2,'1', from_ind, to_ind)
     if (start_index_x1 == 'none' and start_index_x2 !='none'): return 'x2'
     elif (start_index_x2 == 'none' and start_index_x1 !='none'): return 'x1'
     elif (start_index_x1 == 'none' and start_index_x2 =='none'): return 'same'
@@ -40,36 +41,47 @@ def compare_moduls(x1_list, x2_list, are_same, from_ind, to_ind) -> str:
         if int(start_index_x1) == to_ind:
             return 'same'
         else:
-            return compare_moduls(x1_list, x2_list, are_same, int(start_index_x1) + 1, to_ind)
+            return compare_moduls(x1, x2, are_same, int(start_index_x1) + 1, to_ind)
     elif start_index_x1 < start_index_x2: return 'x1'
     else: return 'x2'
 
-def sum_for_diff_signs(pos_list, neg_list) -> str:
-    larger_modul = compare_moduls(pos_list, neg_list, False, 1, 31)
+def sum_for_diff_signs(positive, negative) -> str:
+    larger_modul = compare_moduls(positive, negative, False, FIRST_INDEX + 1, LAST_INDEX)
     if larger_modul == 'same': return NULL_STR
-    elif larger_modul == 'x2': return convert_return(''.join(sum(pos_list, neg_list, '1')))
-    else: return sum_if_positive_bigger(pos_list, neg_list)
+    elif larger_modul == 'x2': return convert_return(sum(positive, negative, '1'))
+    else: return sum_if_positive_bigger(positive, negative)
 
-def sum_if_positive_bigger(x1_list, x2_list):
+def sum_if_positive_bigger(x1, x2) -> str:
     result = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    result[0] = '0'
-    for n in range(31, 0, -1):
-        temp_i = int(x1_list[n]) + int(x2_list[n]) + result[n]
-        if temp_i == 0 or temp_i == 1:
-            result[n] = str(temp_i)
+    result[FIRST_INDEX] = '0'
+    for index in range(LAST_INDEX, FIRST_INDEX, -1):
+        preliminary_result = int(x1[index]) + int(x2[index]) + result[index]
+        if preliminary_result == 0 or preliminary_result == 1:
+            result[index] = str(preliminary_result)
         else:
-            result[n] = '0' if temp_i == 2 else '1'
-            if n != 1: result[n-1] += 1
-    return sum(result, list(ONE_STR), '0')
+            result[index] = '0' if preliminary_result == 2 else '1'
+            if index != FIRST_INDEX + 1: result[index-1] += 1
+    return sum(result, ONE_STR, '0')
 
-def subtraction(x1_str, x2_str) -> str:
-    x1_list = list(x1_str)
-    x2_list = list(x2_str)
-    if x2_list[0] == '1': 
-        x2_list = list(convert_return(x2_str))
-        x2_list[0] = '0'
+def addition(x1, x2) -> str:
+    if x1[FIRST_INDEX] == x2[FIRST_INDEX]: 
+        return sum_for_same_sign(x1, x2)
+    elif x1[FIRST_INDEX] == '1':
+        positive = x1
+        negative = x2
+    else:
+        positive = x2
+        negative = x1
+    return sum_for_diff_signs(positive, negative)
+
+def subtraction(x1, x2) -> str:
+    x1_list = list(x1)
+    x2_list = list(x2)
+    if x2_list[FIRST_INDEX] == '1': 
+        x2_list = list(convert_return(x2))
+        x2_list[FIRST_INDEX] = '0'
     else: 
-        x2_list[0] = '1'
+        x2_list[FIRST_INDEX] = '1'
         x2_list = list(convert_return(''.join(x2_list)))
     return addition(''.join(x1_list),''.join(x2_list))
 
@@ -80,130 +92,114 @@ def convert_direct(x_int) -> str:
     while abs(x_int) > 0:
         number_itself = str(abs(x_int) % 2) + number_itself
         x_int = abs(x_int) // 2
-    for i in range(31 - len(number_itself), 0, -1):
+    for i in range(LAST_INDEX - len(number_itself), FIRST_INDEX, -1):
         x_str += '0'
     x_str += number_itself
     return x_str
 
 def convert_return(x_str) -> str:
-    if list(x_str)[0] == '1': 
+    if list(x_str)[FIRST_INDEX] == '1': 
         result = '1' 
-        for i in range(1, 32, 1):
-            result += '1' if list(x_str)[i] == '0' else '0'
+        for index in range(FIRST_INDEX + 1, ALL_BITES, 1):
+            result += '1' if list(x_str)[index] == '0' else '0'
         return result
     else: return x_str
     
-def convert_additional(x_str) -> str:
-    x_list = list(x_str)
-    return sum(list(ONE_STR), x_list, '1') if x_list[0] == '1' else x_str 
+def convert_additional(x) -> str:
+    return sum(ONE_STR, x, '1') if x[FIRST_INDEX] == '1' else x 
 
-def addition(x1_str, x2_str) -> str:
-    x1_list = list(x1_str)
-    x2_list = list(x2_str)
-    if x1_list[0] == x2_list[0]: 
-        return sum_for_same_sign(x1_list, x2_list)
-    elif x1_list[0] == '1':
-        positive = x1_list
-        negative = x2_list
-    else:
-        positive = x2_list
-        negative = x1_list
-    return sum_for_diff_signs(positive, negative)
-
-def find_start_index(x_list, sign, from_ind, to_ind) -> str:
+def find_start_index(x, sign, from_index, to_index) -> str:
     to_find = '1' if sign == '0' else '0'
-    for index_counter in range(from_ind, to_ind + 1, 1): 
-        if x_list[index_counter] == to_find:
-            return str(index_counter)
+    for index in range(from_index, to_index + 1, 1): 
+        if x[index] == to_find:
+            return str(index)
     return 'none'
             
-def multiplication(x1_list, x2_list):
-    index1 = int(find_start_index(x1_list, '0', 1, 31))
-    index2 = int(find_start_index(x2_list, '0', 1, 31))
-    if (index1 + index2) <= ALL_BITES: return 'Перегрузка'
+def multiplication(x1, x2):
+    start_ind_1 = int(find_start_index(x1, '0', FIRST_INDEX + 1, LAST_INDEX))
+    start_ind_2 = int(find_start_index(x2, '0', FIRST_INDEX + 1, LAST_INDEX))
+    if (start_ind_1 + start_ind_2) <= ALL_BITES: return 'Перегрузка'
     result = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    result[0] = '1' if x1_list[0] != x2_list[0] else '0' 
-    for x2_index in range(31, 0, -1):
-        if x2_list[x2_index] == '1': 
-            for i in range(x2_index, 0, -1):
-                result[i] += int(x1_list[31 - x2_index + i])
-    for result_ind in range(31, 0, -1):
-        if result[result_ind] == 0 or result[result_ind] == 1: result[result_ind]= str(result[result_ind])
+    result[FIRST_INDEX] = '1' if x1[FIRST_INDEX] != x2[FIRST_INDEX] else '0' 
+    for x2_index in range(LAST_INDEX, FIRST_INDEX, -1):
+        if x2[x2_index] == '1': 
+            for index in range(x2_index, FIRST_INDEX, -1):
+                result[index] += int(x1[LAST_INDEX - x2_index + index])
+    for result_ind in range(LAST_INDEX, FIRST_INDEX, -1):
+        if result[result_ind] == 0 or result[result_ind] == 1:
+            result[result_ind]= str(result[result_ind])
         else:
-            if result_ind != 1: result[result_ind - 1] += (int(result[result_ind])//2)
+            if result_ind != FIRST_INDEX + 1:
+                result[result_ind - 1] += (int(result[result_ind])//2)
             else: return 'Переполнение'
             result[result_ind] = '0' if result[result_ind] % 2 == 0 else '1'  
     return ''.join(result)
 
-def division(x1_str, x2_str):
-    x1_list = list(x1_str)
-    x2_list = list(x2_str)
-    dividend = divisor = 0
-    if compare_moduls(x1_list, x2_list, True, 1, 31) == 'same':
-        if x1_list[0] == x2_list[0]: return ONE_STR
+def division(x1, x2):
+    dividend = divisor = ''
+    if compare_moduls(x1, x2, True, FIRST_INDEX + 1, LAST_INDEX) == 'same':
+        if x1[FIRST_INDEX] == x2[FIRST_INDEX]: return ONE_STR
         else: 
             result = list(ONE_STR)
-            result[0] == '1'
+            result[FIRST_INDEX] == '1'
             return ''.join(result)
-    elif compare_moduls(x1_list, x2_list, True, 1, 31) == 'x1':
-        dividend = x1_list
-        divisor = x2_list
+    elif compare_moduls(x1, x2, True, FIRST_INDEX + 1, LAST_INDEX) == 'x1':
+        dividend = x1
+        divisor = x2
     else:
         return NULL_STR
-    result = '1' if x1_list[0] != x2_list[0] else '0'
+    result = '1' if x1[FIRST_INDEX] != x2[FIRST_INDEX] else '0'
     division = division_operation(dividend, divisor)
-    for i in range(31-len(division_operation(dividend, divisor)), 0, -1): 
+    for i in range(LAST_INDEX-len(division), FIRST_INDEX, -1): 
         result += '0'
     result += division
     return result
 
-def division_operation(dividend, divisor):
+def division_operation(dividend, divisor) -> str:
     result_str = ''
-    start_index1 = int(find_start_index(dividend, '0', 1, 31))
-    start_index2 = int(find_start_index(divisor, '0', 1, 31))
-    if start_index1 == start_index2: return ONE_STR
+    start_index1 = int(find_start_index(dividend, '0', FIRST_INDEX + 1, LAST_INDEX))
+    start_index2 = int(find_start_index(divisor, '0', FIRST_INDEX + 1, LAST_INDEX))
     divisor_size = ALL_BITES - start_index2
     last_digit = start_index1 + divisor_size - 1
-    dividend_temp =[]
+    dividend_temp = []
     divisor_temp = []
-    for x in range(start_index1, last_digit + 1, 1):
-        dividend_temp.append(dividend[x])
-    for x in range(start_index2, ALL_BITES, 1): 
-        divisor_temp.append(divisor[x])
+    for ind in range(start_index1, last_digit + 1, 1):
+        dividend_temp.append(dividend[ind])
+    for ind in range(start_index2, ALL_BITES, 1): 
+        divisor_temp.append(divisor[ind])
     str_divison = ''.join(divisor_temp)
-    while(last_digit <= 31):
+    while(last_digit <= LAST_INDEX):
         x1 = x2 = '0'
-        while (len(dividend_temp) - len(divisor_temp)) > 0: divisor_temp.insert(0,'0')
-        while (len(dividend_temp) - len(divisor_temp)) < 0: dividend_temp.insert(0,'0')
-        while(compare_moduls(dividend_temp, divisor_temp, True, 0, len(dividend_temp)-1 ) == 'x2'):
+        while (len(dividend_temp) - len(divisor_temp)) > 0: divisor_temp.insert(FIRST_INDEX,'0')
+        while (len(dividend_temp) - len(divisor_temp)) < 0: dividend_temp.insert(FIRST_INDEX,'0')
+        while(compare_moduls(dividend_temp, divisor_temp, True, 0, len(dividend_temp) - 1 ) == 'x2'):
             result_str += '0'
             divisor_temp.insert(0,'0')
-            last_digit+=1
+            last_digit += 1
             if last_digit == ALL_BITES: return result_str
             dividend_temp.append(dividend[last_digit])  
-        for i in range(31-len(''.join(dividend_temp)), 0, -1): 
+        for i in range(LAST_INDEX-len(''.join(dividend_temp)), FIRST_INDEX, -1): 
             x1 += '0'
             x2 += '0'
         x1 += ''.join(dividend_temp)
         x2 += ''.join(divisor_temp)
         substraction_result = list(subtraction(x1, x2))
-        if find_start_index(substraction_result,'0', 1 ,31) != 'none':
-            new_index1 = int(find_start_index(substraction_result,'0', 1 ,31))
-            new_dividend_temp = []
-            for x in range(new_index1, 31 +1, 1): 
-                new_dividend_temp.append(substraction_result[x])
-            dividend_temp = new_dividend_temp
+        if find_start_index(substraction_result,'0', FIRST_INDEX + 1 ,LAST_INDEX) != 'none':
+            from_id = int(find_start_index(substraction_result,'0', FIRST_INDEX + 1 ,LAST_INDEX))
+            dividend_temp = []
+            for ind in range(from_id, ALL_BITES, 1): 
+                dividend_temp.append(substraction_result[ind])
         else: dividend_temp = []
         divisor_temp = list(str_divison)
-        last_digit+=1
+        last_digit += 1
         if last_digit < ALL_BITES: dividend_temp.append(dividend[last_digit])
         result_str += '1'
     return result_str
 
 def find_mant_for_not0(x_integer_decimal, x_fractional_decimal) -> list:
     x_integer_binary = list(convert_direct(x_integer_decimal))
-    while x_integer_binary[0] != '1': x_integer_binary.pop(0)
-    x_integer_binary.pop(0)
+    while x_integer_binary[FIRST_INDEX] != '1': x_integer_binary.pop(FIRST_INDEX)
+    x_integer_binary.pop(FIRST_INDEX)
     x_integer_binary = ''.join(x_integer_binary)
     x_fractional_binary = ''
     while len(x_fractional_binary) + len(x_integer_binary) < MANTISSA_BITES:
@@ -222,13 +218,13 @@ def find_mant_for_0(x_fractional_decimal) -> list:
         x_fractional_binary += '0' if math.floor(x_fractional_decimal) == 0 else '1'
         if x_fractional_decimal >= 1: 
             x_fractional_decimal = x_fractional_decimal - 1 
-    order=0
+    order = 0
     mantissa = list(x_fractional_binary)
-    while mantissa[0] != '1':
-        mantissa.pop(0)
-        order -=1
-    mantissa.pop(0)
-    order -=1
+    while mantissa[FIRST_INDEX] != '1':
+        mantissa.pop(FIRST_INDEX)
+        order -= 1
+    mantissa.pop(FIRST_INDEX)
+    order -= 1
     while len(mantissa) < MANTISSA_BITES:
         mantissa += '0'
     return [''.join(mantissa), order]
@@ -245,66 +241,66 @@ def convert_float(x_decimal) -> str:
     mantissa = list(mantissa_and_order[0])
     order = mantissa_and_order[1]  
     exp = convert_direct(order + DEFAULT_EXP)
-    for i in range (31, MANTISSA_BITES, -1):
-        mantissa.insert(0, exp[i])
-    result = sign + ''.join(mantissa[0:31])
+    for index in range (LAST_INDEX, MANTISSA_BITES, -1):
+        mantissa.insert(FIRST_INDEX, exp[index])
+    result = sign + ''.join(mantissa[FIRST_INDEX:LAST_INDEX])
     return result
 
 def convert_return_float(x) -> str:
-    return x[0:FIRST_MANT_INDEX] + convert_return(x)[FIRST_MANT_INDEX:ALL_BITES]
+    return x[FIRST_INDEX:FIRST_MANT_INDEX] + convert_return(x)[FIRST_MANT_INDEX:ALL_BITES]
     
 def sum_float(x1, x2):
-    exp1 = int(x1[1:FIRST_MANT_INDEX], 2) - DEFAULT_EXP
-    exp2 = int(x2[1:FIRST_MANT_INDEX], 2) - DEFAULT_EXP
+    exp1 = int(x1[FIRST_INDEX + 1:FIRST_MANT_INDEX], 2) - DEFAULT_EXP
+    exp2 = int(x2[FIRST_INDEX + 1:FIRST_MANT_INDEX], 2) - DEFAULT_EXP
     exp = 0
     smaller = bigger = []
     if exp1 < exp2:
-        bigger = list(x2[0]+x2[FIRST_MANT_INDEX:ALL_BITES])
-        smaller = list(x1[0]+x1[FIRST_MANT_INDEX:ALL_BITES])
+        bigger = list(x2[FIRST_INDEX]+x2[FIRST_MANT_INDEX:ALL_BITES])
+        smaller = list(x1[FIRST_INDEX]+x1[FIRST_MANT_INDEX:ALL_BITES])
         exp = exp2
     else :
-        bigger = list(x1[0]+x1[FIRST_MANT_INDEX:ALL_BITES])
-        smaller = list(x2[0]+x2[FIRST_MANT_INDEX:ALL_BITES])
+        bigger = list(x1[FIRST_INDEX]+x1[FIRST_MANT_INDEX:ALL_BITES])
+        smaller = list(x2[FIRST_INDEX]+x2[FIRST_MANT_INDEX:ALL_BITES])
         exp = exp1
     add_0 = abs(exp1-exp2)
 
     def positive(x, is_bigger):
-        x.insert(1, '1')
-        for i in range(0, add_0, 1):
-            x.append('0') if is_bigger else x.insert(1,'0')   
-        while len(x) < ALL_BITES: x.insert(0, '0')
+        x.insert(FIRST_INDEX + 1, '1')
+        for i in range(FIRST_INDEX, add_0, 1):
+            x.append('0') if is_bigger else x.insert(FIRST_INDEX + 1,'0')   
+        while len(x) < ALL_BITES: x.insert(FIRST_INDEX, '0')
         return x
         
     def negative(x, is_bigger):
-        x.insert(1, '0')
-        for i in range(0, add_0, 1):
-            x.append('1') if is_bigger else x.insert(1,'1')     
-        while len(x) < ALL_BITES: x.insert(0, '1')
+        x.insert(FIRST_INDEX + 1, '0')
+        for i in range(FIRST_INDEX, add_0, 1):
+            x.append('1') if is_bigger else x.insert(FIRST_INDEX + 1,'1')     
+        while len(x) < ALL_BITES: x.insert(FIRST_INDEX, '1')
         return x
     
     term1 = positive(bigger, True) if bigger[0]=='0' else negative(bigger, True)
     term2 = positive(smaller, False) if smaller[0]=='0' else negative(smaller, False)
     sum = list(addition((''.join(term1))[0:ALL_BITES],(''.join(term2))[0:ALL_BITES]))
-    sign = sum[0]
-    sum.pop(0)
+    sign = sum[FIRST_INDEX]
+    sum.pop(FIRST_INDEX)
     mantissa = []
     overload = False 
-    default_amount_0 = ALL_BITES - (MANTISSA_BITES + 1) -1 #7
+    default_amount_0 = ALL_BITES - (MANTISSA_BITES + 1) - 1 #7
     only_0 = default_amount_0 - add_0
-    for i in range(0, only_0, 1):
-        if sum[i] == '1': overload = True
+    for index in range(FIRST_INDEX, only_0, 1):
+        if sum[index] == '1': overload = True
     if overload: 
         exp += 1
         mantissa = sum[(only_0) : (only_0+MANTISSA_BITES)]
     else:
         decrease_digit = 0
-        while only_0 + decrease_digit < 30 and sum[(only_0) + decrease_digit] != '1': decrease_digit+=1
+        while only_0 + decrease_digit < LAST_INDEX - 1 and sum[(only_0) + decrease_digit] != '1': decrease_digit += 1
         exp -= decrease_digit
-        mantissa = sum[(only_0 +decrease_digit +1):32]
+        mantissa = sum[(only_0 + decrease_digit + 1):ALL_BITES]
         while len(mantissa) < MANTISSA_BITES: mantissa.append('0')
     exponenta = convert_direct(exp + DEFAULT_EXP)
-    for i in range (31, MANTISSA_BITES, -1): mantissa.insert(0, exponenta[i])
-    result = sign + ''.join(mantissa[0:31])
+    for index in range (LAST_INDEX, MANTISSA_BITES, - 1): mantissa.insert(FIRST_INDEX, exponenta[index])
+    result = sign + ''.join(mantissa[FIRST_INDEX:LAST_INDEX])
     return result
 
 
